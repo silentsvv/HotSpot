@@ -1,8 +1,6 @@
 #canvas {
+  display: inline-block;
   margin: 0 auto;
-  width: 600px;
-  height: 400px;
-  border: 1px solid #ccc;
   position: relative;
   user-select:none;
 }
