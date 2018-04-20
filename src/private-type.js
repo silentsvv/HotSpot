@@ -22,3 +22,4 @@ export const _findRectangle = Symbol('findRectangle');
 export const _getParentPosition = Symbol('getParentPosition');
 export const _getMousePosition = Symbol('getMousePosition');
 export const _getImageWidthHeightandSrc = Symbol('getImageWidthHeightandSrc');
+export const _removeRelateData = Symbol('removeRelateData');

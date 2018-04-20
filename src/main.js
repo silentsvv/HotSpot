@@ -348,6 +348,15 @@ class HotSpot {
     [selfMode._removeRelateNode](hash) {
         this[selfMode._removeRectangle](hash);
         this[selfMode._removeLiElement](hash);
+        this[selfMode._removeRelateData](hash);
+    }
+
+    [selfMode._removeRelateData](hash) {
+        let result = this.childNodeList.filter((item) => {
+            return item.hash !== hash
+        })
+
+        this.childNodeList = result;
     }
 
     /**
@@ -405,7 +414,6 @@ class HotSpot {
         this.container.appendChild(liElement);
         this.childNodeList.push(childNodeObj);
     }
-
 
     /**
      * 生成元素的点击事件
