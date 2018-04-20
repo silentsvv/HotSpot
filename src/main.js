@@ -1,31 +1,57 @@
 import './style.scss'
 
+/**
+ * 
+ * @param {dom} wrapper 选择的父容器节点
+ * @param {obj} option 可选参数 {
+ *                  clickResponse: 绘制的时间少于多少ms不进行创建(默认200ms)
+ *                  imageSrc: 生成图片的设置路径,
+ *                  closeBtnClassName: 关闭按钮类名(默认hotspot-close),
+ *                  closeBtnText: 默认'关闭',
+ *                  closeBtnTextShow: 默认true
+ *              }
+ * @class HotSpot
+ */
 class HotSpot {
     constructor(wrapper, option) {
         console.log(parent);
+        //容器
         this.wrapper         = wrapper; //包裹元素
         this.parent          = parent; //绑定的父元素
         this.parentPos       = {}; //父元素位置
         this.container       = null; //控制面板输出容器
+        this.activeChildNode = null; //激活的子元素
 
+        //选项
         this.option          =  {
                                    container: 'list', //容器id
                                    clickResponse: 200, //创建容器反应时间
+                                   closeBtnText: '关闭',
+                                   closeBtnTextShow: true
                                 }
+        
+        //鼠标事件
         this.startPos        = {};//开始绘制的位置
         this.nowPos          = {}; //目前的鼠标位置
-        this.rectInfo        = {};
-
-        this.startTime       = null;
-        this.endTime         = null;
-        this.activeChildNode = null; //激活的子元素
-        this.childNodeList   = []; //选择的元素
+        this.startTime       = null; //开始绘制的时间
+        this.endTime         = null; //结束绘制的时间
         this.STATUS          = '';
 
+        //绘制元素记录信息
+        this.imageInfo       = {}; //图片记录信息(宽高/链接)
+        this.rectInfo        = {}; //绘制成功区域数据
+
+        //已绘制的区域集合信息
+        this.childNodeList   = []; 
+
+        //集合用户配置的信息
         this.option          = Object.assign(this.option, option);
+
+        //绑定当前thiz指向
         this._mouseDown      = this._mouseDown.bind(this);
         this._mouseMove      = this._mouseMove.bind(this);
         this._mouseUp        = this._mouseUp.bind(this);
+        this._closeBtnClickEvent = this._closeBtnClickEvent.bind(this);
 
         //初始化
         this._initParent();
@@ -37,7 +63,7 @@ class HotSpot {
      * @memberof HotSpot
      */
     _initParent() {
-        this._getImageWidthAndHeight().then((res) => {
+        this._getImageWidthHeightandSrc().then((res) => {
             let parent = document.createElement('div');
             parent.id = 'parent';
             parent.style.cssText = `
@@ -49,6 +75,8 @@ class HotSpot {
                 border: 1px solid #ddd;
                 zIndex: 99;
             `
+
+            this.imageInfo = res;
             this.wrapper.appendChild(parent);
             this.parent = parent;
             this._initVariable();
@@ -119,12 +147,12 @@ class HotSpot {
         element.innerHTML = `
             <button class="setting-start" data-type="start">开始</button>
             <button class="setting-end" data-type="stop">暂停</button>
-            <button class="setting-output" data-type="output">导出json</button>
-            <button class="setting-create" data-type="create">生成区域</button>
+            <button class="setting-output" data-type="output">导出Html</button>
         `
 
         element.addEventListener('click', this._bindSettingEvent.bind(this));
         this.container.appendChild(element);
+        this._controlBtnStyle(true);
     }
 
     /**
@@ -135,13 +163,38 @@ class HotSpot {
      */
     _bindSettingEvent(e) {
         let target = e.target;
+        console.log(e);
         if(target.dataset.type == 'start') {
             this.STATUS = 'start';
             this._initMouseEvent();
+            this._controlBtnStyle(true);
         }else if(target.dataset.type == 'stop') {
             console.log('移除监听事件');
             this._removeMouseEvent();
+            this._controlBtnStyle(false);
+        }else if(target.dataset.type == 'output') {
+            this.outputElementJSON().then((res) => {})
         }
+    }
+
+    /**
+     * 开启和暂停样式
+     * 
+     * @param {any} open 
+     * @memberof HotSpot
+     */
+    _controlBtnStyle(open) {
+        let startBtn = this.container.querySelector('[data-type=start]');
+        let stopBtn = this.container.querySelector('[data-type=stop]');
+
+        if(open) {
+            startBtn.style.opacity = 0.5;
+            stopBtn.style.opacity = 1; 
+        }else {
+            startBtn.style.opacity = 1;
+            stopBtn.style.opacity = 0.5; 
+        }
+        
     }
 
     /**
@@ -219,8 +272,7 @@ class HotSpot {
 
         //判断点击元素类型
         if(target.dataset.type == 'del') {
-            this._removeRectangle(hash);
-            this._removeLiElement(target);
+            this._removeRelateNode(hash);
         }else if(target.dataset.type == 'sure') {
             this._bindRectangleEvent(target, hash);
         }
@@ -251,10 +303,6 @@ class HotSpot {
         rect.element.addEventListener('click', function() {
             location.href = urlLink;
         })
-    }
-
-    _bindRectangleClick() {
-
     }
 
     /**
@@ -292,6 +340,17 @@ class HotSpot {
     }
 
     /**
+     * 根据hash值来移除相应的节点
+     * 
+     * @param {any} hash 
+     * @memberof HotSpot
+     */
+    _removeRelateNode(hash) {
+        this._removeRectangle(hash);
+        this._removeLiElement(hash);
+    }
+
+    /**
      * 删除已生成的矩形区域
      * 
      * @param {any} hash
@@ -310,6 +369,7 @@ class HotSpot {
     _createLiElement() {
         let liElement = document.createElement('li');
         let timeHash = new Date().getTime().toString();
+        liElement.setAttribute('data-hash', timeHash);
         liElement.innerHTML = `
             <div class="child__node">
                 <span class="child__node__text">
@@ -321,6 +381,19 @@ class HotSpot {
                 <button data-hash='${timeHash}' data-type='del'>删除</button>
             </div>
         `
+
+        //添加删除按钮
+        this.activeChildNode.innerHTML =  `
+            <span 
+                class="${this.option.closeBtnClassName?this.option.closeBtnClassName:'hotspot-close'}" 
+                data-hash="${timeHash}"
+                style="position: absolute;
+                    right: 0;
+                    top: 0;
+                ">
+                ${this.option.closeBtnTextShow?this.option.closeBtnText:''}
+            </span>
+        `
  
         let childNodeObj = {
             hash: timeHash,
@@ -328,9 +401,25 @@ class HotSpot {
             data: this.rectInfo
         }
 
+        this.activeChildNode.addEventListener('click', this._closeBtnClickEvent);
         this.container.appendChild(liElement);
         this.childNodeList.push(childNodeObj);
-        console.log(this.childNodeList);
+    }
+
+
+    /**
+     * 生成元素的点击事件
+     * 
+     * @param {any} e 
+     * @memberof HotSpot
+     */
+    _closeBtnClickEvent(e) {
+        let target = e.target;
+        console.log('click');
+        let hash = target.dataset.hash; 
+        if(hash) {
+            this._removeRelateNode(hash);
+        }
     }
 
     /**
@@ -339,44 +428,54 @@ class HotSpot {
      * @param {any} target 
      * @memberof HotSpot
      */
-    _removeLiElement(target) {
-        let parent = this._findParent('li', target);
-        this.container.removeChild(parent);
-    }
-
-    /**
-     * 寻找父元素
-     * 
-     * @param {any} tagName 
-     * @param {any} el 
-     * @returns 
-     * @memberof HotSpot
-     */
-    _findParent(tagName, el) {
-        try {
-            el = target.closest('li');
-        }catch (err) {
-            while (el && el.tagName !== tagName.toUpperCase()) {
-                el = el.parentNode;
+    _removeLiElement(hash) {
+        let liResult = this.container.querySelectorAll('li');
+        let target;
+        liResult.forEach((item) => {
+            console.log(item);
+            if(item.dataset.hash === hash) {
+                target = item;
             }
-        }
+        })
+
+        target?this.container.removeChild(target):false;
+        // let parent = this._findParent('li', target);
+        // this.container.removeChild(parent);
+    }
+
+    // /**
+    //  * 寻找父元素
+    //  * 
+    //  * @param {any} tagName 
+    //  * @param {any} el 
+    //  * @returns 
+    //  * @memberof HotSpot
+    //  */
+    // _findParent(tagName, el) {
+    //     try {
+    //         el = target.closest('li');
+    //     }catch (err) {
+    //         while (el && el.tagName !== tagName.toUpperCase()) {
+    //             el = el.parentNode;
+    //         }
+    //     }
         
-        return el;
-    }
+    //     return el;
+    // }
 
-    /**
-     * 获取临近元素
-     * 
-     * @param {any} filter 
-     * @param {any} el 
-     * @returns 
-     * @memberof HotSpot
-     */
-    _findNearElement(filter, el) {
-        let result = el.querySelector(filter);
+    // /**
+    //  * 获取临近元素
+    //  * 
+    //  * @param {any} filter 
+    //  * @param {any} el 
+    //  * @returns 
+    //  * @memberof HotSpot
+    //  */
+    // _findNearElement(filter, el) {
+    //     let result = el.querySelector(filter);
 
-        return result;
-    }
+    //     return result;
+    // }
 
     /**
      *  寻找当前选择的区域
@@ -456,13 +555,14 @@ class HotSpot {
      * @param {any} link
      * @memberof HotSpot
      */
-    _getImageWidthAndHeight() {
+    _getImageWidthHeightandSrc() {
         return new Promise((resolve, reject) => {
             let image = this.wrapper.querySelector('[data-image]');
             if(image.complete) {
                 resolve({
                     width: image.width,
-                    height: image.height
+                    height: image.height,
+                    src: image.src
                 })
                 return false;
             }
@@ -470,7 +570,8 @@ class HotSpot {
             image.onload = () => {
                 resolve({
                     width: image.width,
-                    height: image.height
+                    height: image.height,
+                    src: image.src
                 })
             }
         })
@@ -487,6 +588,30 @@ class HotSpot {
             let result = this.childNodeList.map((element) => {
                 return element.data;
             })
+
+            let aTagList = [];
+            let aTagListString = '';
+
+            result.forEach((item) => {
+                let aTagString = `
+                    <a href="${item.url}" style="position: absolute; left: ${item.left}px; top: ${item.top}px; width: ${item.width}px; height: ${item.height}px; background-color: blue"></a>
+                `
+                aTagList.push(aTagString);
+            })
+
+            aTagListString = aTagList.join('');
+            let SectionSrc = this.option.imageSrc?this.option.imageSrc:this.imageInfo.src;
+
+            let createSectionString = `
+                <section class="create-pc-hotspot" style="position: relative; display: inline-block; font-size: 0;">
+                    <img class="image" alt="" src="${SectionSrc}">
+                    <div class="hotspot" style="position: absolute; top: 0; left: 0; width: ${this.imageInfo.width}px; height: ${this.imageInfo.height}px;">
+                        ${aTagListString}
+                    </div>
+                </section>
+            `
+
+            alert(createSectionString);
     
             if(result) {
                 resolve(JSON.stringify(result));
@@ -539,4 +664,6 @@ class HotSpot {
     }
 }
 
-window.HotSpot = new HotSpot(document.querySelector('#canvas'));
+window.HotSpot = new HotSpot(document.querySelector('#canvas'), {
+    imageSrc: './src/image/sweden-bottom-bg.png'
+});
