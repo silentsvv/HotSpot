@@ -1,4 +1,5 @@
 import './style.scss'
+import * as selfMode from './private-type'
 
 /**
  * 
@@ -14,11 +15,10 @@ import './style.scss'
  */
 class HotSpot {
     constructor(wrapper, option) {
-        console.log(parent);
         //容器
         this.wrapper         = wrapper; //包裹元素
-        this.parent          = parent; //绑定的父元素
         this.parentPos       = {}; //父元素位置
+        this.parent          = null; //绑定的父元素
         this.container       = null; //控制面板输出容器
         this.activeChildNode = null; //激活的子元素
 
@@ -48,13 +48,13 @@ class HotSpot {
         this.option          = Object.assign(this.option, option);
 
         //绑定当前thiz指向
-        this._mouseDown      = this._mouseDown.bind(this);
-        this._mouseMove      = this._mouseMove.bind(this);
-        this._mouseUp        = this._mouseUp.bind(this);
-        this._closeBtnClickEvent = this._closeBtnClickEvent.bind(this);
+        this[selfMode._mouseDown]          = this[selfMode._mouseDown].bind(this);
+        this[selfMode._mouseMove]          = this[selfMode._mouseMove].bind(this);
+        this[selfMode._mouseUp]            = this[selfMode._mouseUp].bind(this);
+        this[selfMode._closeBtnClickEvent] = this[selfMode._closeBtnClickEvent].bind(this);
 
         //初始化
-        this._initParent();
+        this[selfMode._initParent]();
     }
 
     /**
@@ -62,8 +62,8 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _initParent() {
-        this._getImageWidthHeightandSrc().then((res) => {
+    [selfMode._initParent]() {
+        this[selfMode._getImageWidthHeightandSrc]().then((res) => {
             let parent = document.createElement('div');
             parent.id = 'parent';
             parent.style.cssText = `
@@ -79,9 +79,9 @@ class HotSpot {
             this.imageInfo = res;
             this.wrapper.appendChild(parent);
             this.parent = parent;
-            this._initVariable();
-            this._initEvent();
-            this._initSetting();
+            this[selfMode._initVariable]();
+            this[selfMode._initEvent]();
+            this[selfMode._initSetting]();
         })
     }
 
@@ -90,8 +90,8 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _initVariable() {
-        this._getParentPosition(this.parent);
+    [selfMode._initVariable]() {
+        this[selfMode._getParentPosition](this.parent);
         this.container = document.querySelector(this.option.container);
 
         //判断页面是否存在
@@ -108,9 +108,9 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _initEvent() {
-        this._initMouseEvent();
-        this.container.addEventListener('click', this._childClickEvent.bind(this));
+    [selfMode._initEvent]() {
+        this[selfMode._initMouseEvent]();
+        this.container.addEventListener('click', this[selfMode._childClickEvent].bind(this));
     }
 
     /**
@@ -118,11 +118,11 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _initMouseEvent() {
+    [selfMode._initMouseEvent]() {
         console.log('添加事件');
-        this.parent.addEventListener('mousedown', this._mouseDown);
-        this.parent.addEventListener('mousemove', this._mouseMove);
-        this.parent.addEventListener('mouseup', this._mouseUp);
+        this.parent.addEventListener('mousedown', this[selfMode._mouseDown]);
+        this.parent.addEventListener('mousemove', this[selfMode._mouseMove]);
+        this.parent.addEventListener('mouseup', this[selfMode._mouseUp]);
     }
 
     /**
@@ -130,11 +130,11 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _removeMouseEvent() {
+    [selfMode._removeMouseEvent]() {
         console.log('移除事件');
-        this.parent.removeEventListener('mousedown', this._mouseDown);
-        this.parent.removeEventListener('mousemove', this._mouseMove);
-        this.parent.removeEventListener('mouseup', this._mouseUp);
+        this.parent.removeEventListener('mousedown', this[selfMode._mouseDown]);
+        this.parent.removeEventListener('mousemove', this[selfMode._mouseMove]);
+        this.parent.removeEventListener('mouseup', this[selfMode._mouseUp]);
     }
 
     /**
@@ -142,7 +142,7 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _initSetting() {
+    [selfMode._initSetting]() {
         let element = document.createElement('div');
         element.innerHTML = `
             <button class="setting-start" data-type="start">开始</button>
@@ -150,9 +150,9 @@ class HotSpot {
             <button class="setting-output" data-type="output">导出Html</button>
         `
 
-        element.addEventListener('click', this._bindSettingEvent.bind(this));
+        element.addEventListener('click', this[selfMode._bindSettingEvent].bind(this));
         this.container.appendChild(element);
-        this._controlBtnStyle(true);
+        this[selfMode._controlBtnStyle](true);
     }
 
     /**
@@ -161,17 +161,17 @@ class HotSpot {
      * @param {any} e 
      * @memberof HotSpot
      */
-    _bindSettingEvent(e) {
+    [selfMode._bindSettingEvent](e) {
         let target = e.target;
         console.log(e);
         if(target.dataset.type == 'start') {
             this.STATUS = 'start';
-            this._initMouseEvent();
-            this._controlBtnStyle(true);
+            this[selfMode._initMouseEvent]();
+            this[selfMode._controlBtnStyle](true);
         }else if(target.dataset.type == 'stop') {
             console.log('移除监听事件');
-            this._removeMouseEvent();
-            this._controlBtnStyle(false);
+            this[selfMode._removeMouseEvent]();
+            this[selfMode._controlBtnStyle](false);
         }else if(target.dataset.type == 'output') {
             this.outputElementJSON().then((res) => {})
         }
@@ -183,7 +183,7 @@ class HotSpot {
      * @param {any} open 
      * @memberof HotSpot
      */
-    _controlBtnStyle(open) {
+    [selfMode._controlBtnStyle](open) {
         let startBtn = this.container.querySelector('[data-type=start]');
         let stopBtn = this.container.querySelector('[data-type=stop]');
 
@@ -203,10 +203,10 @@ class HotSpot {
      * @param {any} e 
      * @memberof HotSpot
      */
-    _mouseDown(e) {
+    [selfMode._mouseDown](e) {
         this.STATUS = 'start';
         this.startTime = new Date();
-        this._getMousePosition(e);
+        this[selfMode._getMousePosition](e);
     }
 
     /**
@@ -216,13 +216,13 @@ class HotSpot {
      * @returns 
      * @memberof HotSpot
      */
-    _mouseMove(e) {
+    [selfMode._mouseMove](e) {
         if(this.STATUS != 'move') {
             return false;
         }
 
-        this._getMousePosition(e);
-        let result = this._calculateWidthAndHeight();
+        this[selfMode._getMousePosition](e);
+        let result = this[selfMode._calculateWidthAndHeight]();
         let left = this.nowPos.x - this.startPos.x < 0 ? this.nowPos.x : this.startPos.x;
         let top = this.nowPos.y - this.startPos.y < 0 ? this.nowPos.y : this.startPos.y;    
         let width = Math.abs(result.width); 
@@ -246,7 +246,7 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _mouseUp(e) {
+    [selfMode._mouseUp](e) {
         let now = new Date();
         this.STATUS = 'end';
 
@@ -255,7 +255,7 @@ class HotSpot {
             this.parent.removeChild(this.activeChildNode);
             return false;
         }
-        this._createLiElement();
+        this[selfMode._createLiElement]();
     }
 
     /**
@@ -264,7 +264,7 @@ class HotSpot {
      * @param {any} e 
      * @memberof HotSpot
      */
-    _childClickEvent(e) {
+    [selfMode._childClickEvent](e) {
         e.stopPropagation();
         console.log(e);
         let target = e.target;
@@ -272,9 +272,9 @@ class HotSpot {
 
         //判断点击元素类型
         if(target.dataset.type == 'del') {
-            this._removeRelateNode(hash);
+            this[selfMode._removeRelateNode](hash);
         }else if(target.dataset.type == 'sure') {
-            this._bindRectangleEvent(target, hash);
+            this[selfMode._bindRectangleEvent](target, hash);
         }
     }
 
@@ -285,7 +285,7 @@ class HotSpot {
      * @param {any} hash
      * @memberof HotSpot
      */
-    _bindRectangleEvent(target, hash) {
+    [selfMode._bindRectangleEvent](target, hash) {
         let parent     = target.parentNode;
         let urlELement = parent.querySelector('[data-url]');
         console.log(urlELement);
@@ -296,7 +296,7 @@ class HotSpot {
             return false;
         }
 
-        let rect = this._findRectangle(hash, true);
+        let rect = this[selfMode._findRectangle](hash, true);
         console.log(rect);
         rect.data.url = urlLink;
 
@@ -311,7 +311,7 @@ class HotSpot {
      * @returns 
      * @memberof HotSpot
      */
-    _calculateWidthAndHeight() {
+    [selfMode._calculateWidthAndHeight]() {
         let width = this.nowPos.x - this.startPos.x;
         let height = this.nowPos.y - this.startPos.y;
         return { width, height }
@@ -322,7 +322,7 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _createRectangle() {
+    [selfMode._createRectangle]() {
         let element = document.createElement('div');
         
 
@@ -345,9 +345,9 @@ class HotSpot {
      * @param {any} hash 
      * @memberof HotSpot
      */
-    _removeRelateNode(hash) {
-        this._removeRectangle(hash);
-        this._removeLiElement(hash);
+    [selfMode._removeRelateNode](hash) {
+        this[selfMode._removeRectangle](hash);
+        this[selfMode._removeLiElement](hash);
     }
 
     /**
@@ -356,8 +356,8 @@ class HotSpot {
      * @param {any} hash
      * @memberof HotSpot
      */
-    _removeRectangle(hash) {
-        let rect = this._findRectangle(hash);
+    [selfMode._removeRectangle](hash) {
+        let rect = this[selfMode._findRectangle](hash);
         this.parent.removeChild(rect);
     }
 
@@ -366,7 +366,7 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    _createLiElement() {
+    [selfMode._createLiElement]() {
         let liElement = document.createElement('li');
         let timeHash = new Date().getTime().toString();
         liElement.setAttribute('data-hash', timeHash);
@@ -401,7 +401,7 @@ class HotSpot {
             data: this.rectInfo
         }
 
-        this.activeChildNode.addEventListener('click', this._closeBtnClickEvent);
+        this.activeChildNode.addEventListener('click', this[selfMode._closeBtnClickEvent]);
         this.container.appendChild(liElement);
         this.childNodeList.push(childNodeObj);
     }
@@ -413,12 +413,12 @@ class HotSpot {
      * @param {any} e 
      * @memberof HotSpot
      */
-    _closeBtnClickEvent(e) {
+    [selfMode._closeBtnClickEvent](e) {
         let target = e.target;
         console.log('click');
         let hash = target.dataset.hash; 
         if(hash) {
-            this._removeRelateNode(hash);
+            this[selfMode._removeRelateNode](hash);
         }
     }
 
@@ -428,7 +428,7 @@ class HotSpot {
      * @param {any} target 
      * @memberof HotSpot
      */
-    _removeLiElement(hash) {
+    [selfMode._removeLiElement](hash) {
         let liResult = this.container.querySelectorAll('li');
         let target;
         liResult.forEach((item) => {
@@ -485,7 +485,7 @@ class HotSpot {
      * @returns 
      * @memberof HotSpot
      */
-    _findRectangle(hash, type) {
+    [selfMode._findRectangle](hash, type) {
         let filter = this.childNodeList.find((item) => {
             return item.hash === hash;
         })
@@ -503,7 +503,7 @@ class HotSpot {
      * @param {any} element 
      * @memberof HotSpot
      */
-    _getParentPosition(element) {
+    [selfMode._getParentPosition](element) {
         var xPosition = 0;
         var yPosition = 0;
 
@@ -525,7 +525,7 @@ class HotSpot {
      * @param {any} e 
      * @memberof HotSpot
      */
-    _getMousePosition(e) {
+    [selfMode._getMousePosition](e) {
         var ev = e || window.event; //Moz || IE
         let mouse = {}
         if (ev.pageX) { //Moz
@@ -542,7 +542,7 @@ class HotSpot {
         if(this.STATUS == 'start') {
             this.startPos = mouse;
             this.STATUS = 'move';
-            this._createRectangle();
+            this[selfMode._createRectangle]();
         }else if(this.STATUS == 'move') {
             this.nowPos = mouse;
         }
@@ -555,7 +555,7 @@ class HotSpot {
      * @param {any} link
      * @memberof HotSpot
      */
-    _getImageWidthHeightandSrc() {
+    [selfMode._getImageWidthHeightandSrc]() {
         return new Promise((resolve, reject) => {
             let image = this.wrapper.querySelector('[data-image]');
             if(image.complete) {
@@ -659,11 +659,30 @@ class HotSpot {
                 }
             });
 
-            this._removeMouseEvent();
+            this[selfMode._removeMouseEvent]();
         })
+    }
+
+    test() {
+        console.log(this);
     }
 }
 
 window.HotSpot = new HotSpot(document.querySelector('#canvas'), {
     imageSrc: './src/image/sweden-bottom-bg.png'
 });
+
+const privateMethod = Symbol('privateMethod');
+class Service {
+    constructor () {
+      this.say = "Hello";
+    }
+    
+    [privateMethod] () {
+      console.log(this.say);
+    }
+    
+    publicMethod () {
+      this[privateMethod]()
+    }
+}
