@@ -599,8 +599,13 @@ class HotSpot {
 
             let aTagList = [];
             let aTagListString = '';
+            let imageW = this.imageInfo.width;
+            let imageH = this.imageInfo.height;
 
             result.forEach((item) => {
+                let leftPer = parseFloat(item.left/this.imageInfo.width);
+                let topPer = parseFloat(item.top/this.imageInfo.width);
+
                 let aTagString = `
                     <a href="${item.url}" style="position: absolute; left: ${item.left}px; top: ${item.top}px; width: ${item.width}px; height: ${item.height}px; background-color: blue"></a>
                 `
@@ -613,7 +618,7 @@ class HotSpot {
             let createSectionString = `
                 <section class="create-pc-hotspot" style="position: relative; display: inline-block; font-size: 0;">
                     <img class="image" alt="" src="${SectionSrc}">
-                    <div class="hotspot" style="position: absolute; top: 0; left: 0; width: ${this.imageInfo.width}px; height: ${this.imageInfo.height}px;">
+                    <div class="hotspot" style="position: absolute; top: 0; left: 0; width: ${imageW}px; height: ${imageH}px;">
                         ${aTagListString}
                     </div>
                 </section>
