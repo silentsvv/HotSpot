@@ -603,11 +603,15 @@ class HotSpot {
             let imageH = this.imageInfo.height;
 
             result.forEach((item) => {
-                let leftPer = parseFloat(item.left/this.imageInfo.width);
-                let topPer = parseFloat(item.top/this.imageInfo.width);
+                let leftPer = parseFloat(item.left/this.imageInfo.width)* 100;
+                let topPer = parseFloat(item.top/this.imageInfo.height)* 100;
+                let widthPer = parseFloat(item.width/this.imageInfo.width)* 100;
+                let heightPer = parseFloat(item.height/this.imageInfo.height)* 100; 
+
+                console.log(leftPer, topPer, widthPer, heightPer);
 
                 let aTagString = `
-                    <a href="${item.url}" style="position: absolute; left: ${item.left}px; top: ${item.top}px; width: ${item.width}px; height: ${item.height}px; background-color: blue"></a>
+                    <a href="${item.url}" style="position: absolute; left: ${leftPer}%; top: ${topPer}%; width: ${widthPer}%; height: ${heightPer}%; background-color: red"></a>
                 `
                 aTagList.push(aTagString);
             })
@@ -617,8 +621,8 @@ class HotSpot {
 
             let createSectionString = `
                 <section class="create-pc-hotspot" style="position: relative; display: inline-block; font-size: 0;">
-                    <img class="image" alt="" src="${SectionSrc}">
-                    <div class="hotspot" style="position: absolute; top: 0; left: 0; width: ${imageW}px; height: ${imageH}px;">
+                    <img class="image" alt="" src="${SectionSrc}" width="100%">
+                    <div class="hotspot" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
                         ${aTagListString}
                     </div>
                 </section>
@@ -684,18 +688,3 @@ class HotSpot {
 window.HotSpot = new HotSpot(document.querySelector('#canvas'), {
     imageSrc: './src/image/sweden-bottom-bg.png'
 });
-
-const privateMethod = Symbol('privateMethod');
-class Service {
-    constructor () {
-      this.say = "Hello";
-    }
-    
-    [privateMethod] () {
-      console.log(this.say);
-    }
-    
-    publicMethod () {
-      this[privateMethod]()
-    }
-}
