@@ -24,3 +24,4 @@ export const _getMousePosition          = Symbol('getMousePosition');
 export const _getImageWidthHeightandSrc = Symbol('getImageWidthHeightandSrc');
 export const _removeRelateData          = Symbol('removeRelateData');
 export const _getLiElementString        = Symbol('getLiElementString');
+export const _undecodeHtmlString        = Symbol('undecodeHtmlString');

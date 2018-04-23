@@ -141,6 +141,7 @@ class HotSpot {
 
         self[selfMode._initMouseEvent]();
         self.container.addEventListener('click', self[selfMode._childClickEvent].bind(self));
+        self.parent.addEventListener('click', self[selfMode._closeBtnClickEvent]);
     }
 
     /**
@@ -343,15 +344,15 @@ class HotSpot {
         }
 
         let rect = self[selfMode._findRectangle](hash, true);
-        let dataNode = self.dataNodeList.find((item) => {
-            return item.hash === hash
-        })
+        // let dataNode = self.dataNodeList.find((item) => {
+        //     return item.hash === hash
+        // })
 
         rect.data.url = urlLink;
-        dataNode.data.url = urlLink; //同步设置data
+        // dataNode.data.url = urlLink; //同步设置data
 
-        let json = JSON.stringify(self.dataNodeList);
-        localStorage.setItem('data', json);
+        // let json = JSON.stringify(self.dataNodeList);
+        // localStorage.setItem('data', json);
 
         rect.element.addEventListener('click', function() {
             location.href = urlLink;
@@ -469,13 +470,13 @@ class HotSpot {
             data: self.rectInfo
         }
 
-        self.activeChildNode.addEventListener('click', self[selfMode._closeBtnClickEvent]);
+        // self.activeChildNode.addEventListener('click', self[selfMode._closeBtnClickEvent]);
         self.container.appendChild(liElement);
         self.childNodeList.push(childNodeObj);
-        self.dataNodeList.push(dataNodeObj);
+        // self.dataNodeList.push(dataNodeObj);
 
-        let json = JSON.stringify(self.dataNodeList);
-        localStorage.setItem('data', json);
+        // let json = JSON.stringify(self.dataNodeList);
+        // localStorage.setItem('data', json);
     }
 
     /**
@@ -627,21 +628,41 @@ class HotSpot {
      * 
      * @memberof HotSpot
      */
-    [selfMode._getLiElementString](index, hash) {
+    [selfMode._getLiElementString](index, hash, url) {
         let self = this;
         let string = self.option.liElementString?self.option.liElementString:`
             <div class="child__node">
                 <span class="child__node__text">
                     这是第#index#个区域
                 </span>
-                <input data-hash='#hash#' type="text" data-url placeholder="输入绑定的url">
+                <input data-hash='#hash#' value='#url#' type="text" data-url placeholder="输入绑定的url">
                 <button data-hash='#hash#' data-type='sure'>确认</button>
                 <button data-hash='#hash#' data-type='edit'>编辑</button>
                 <button data-hash='#hash#' data-type='del'>删除</button>
             </div>
         `
+        console.log(url)
+        string = url!='undefined' && url!=''?string.replace(/#url#/, url):string.replace(/#url#/, '');
 
         return string.replace(/#index#/, index).replace(/#hash#/g, hash)
+    }
+
+    /**
+     * 解析html上的data数据
+     * 
+     * @memberof HotSpot
+     */
+    [selfMode._undecodeHtmlString](string) {
+        let result = [];
+        try {
+            result = string.match(/data-json='(.*?)(?=')/g).map((item) => {
+                console.log(item);
+                return JSON.parse(item.replace("data-json='", ''));
+            });
+        }catch(err) {
+            console.log(err)
+        }
+        return result;
     }
 
     /**
@@ -654,9 +675,7 @@ class HotSpot {
         let self = this;
 
         return new Promise((resolve, reject) => {
-            let result = self.childNodeList.map((element) => {
-                return element.data;
-            })
+            let result = self.childNodeList;
 
             let aTagList = [];
             let aTagListString = '';
@@ -664,15 +683,15 @@ class HotSpot {
             let imageH = self.imageInfo.height;
 
             result.forEach((item) => {
-                let leftPer = parseFloat(item.left/self.imageInfo.width)* 100;
-                let topPer = parseFloat(item.top/self.imageInfo.height)* 100;
-                let widthPer = parseFloat(item.width/self.imageInfo.width)* 100;
-                let heightPer = parseFloat(item.height/self.imageInfo.height)* 100; 
-
-                console.log(leftPer, topPer, widthPer, heightPer);
+                let data = item.data;
+                let hash = item.hash;
+                let leftPer = parseFloat(data.left/self.imageInfo.width)* 100;
+                let topPer = parseFloat(data.top/self.imageInfo.height)* 100;
+                let widthPer = parseFloat(data.width/self.imageInfo.width)* 100;
+                let heightPer = parseFloat(data.height/self.imageInfo.height)* 100; 
 
                 let aTagString = `
-                    <a href="${item.url}" style="position: absolute; left: ${leftPer}%; top: ${topPer}%; width: ${widthPer}%; height: ${heightPer}%; background-color: red"></a>
+                    <a href="${data.url}" style="position: absolute; left: ${leftPer}%; top: ${topPer}%; width: ${widthPer}%; height: ${heightPer}%; background-color: red" data-json='{ "hash": "${hash}", "data": {"left": ${data.left}, "top": ${data.top}, "width": ${data.width}, "height": ${data.height}, "url": "${data.url}"}}'></a>
                 `
                 aTagList.push(aTagString);
             })
@@ -689,9 +708,10 @@ class HotSpot {
                 </section>
             `
 
-            alert(createSectionString);
+            console.log(createSectionString);
+            localStorage.setItem('dataString', createSectionString);
             
-            return result?resolve(JSON.stringify(result)):reject();
+            return result?resolve(JSON.stringify(createSectionString)):reject();
         })
         
     }
@@ -704,14 +724,20 @@ class HotSpot {
      */
     drawElement(data) {
         let self = this;
-        let dataList = JSON.parse(localStorage.getItem('data'));
+        let htmlString = localStorage.getItem('dataString');
+        //let dataList = JSON.parse(localStorage.getItem('data'));
         let eleTotal = '';
         let rectTotal = '';
 
+        let dataList = self[selfMode._undecodeHtmlString](htmlString);
+        //self.dataNodeList = dataList;
+        console.log(dataList);
+
         dataList.forEach((item, index) => {
             self.childNodeList.push(item);
+            console.log(item);
             
-            let element = self[selfMode._getLiElementString](index + 1, item.hash);
+            let element = self[selfMode._getLiElementString](index + 1, item.hash, item.data.url);
             let li = `<li data-hash=${item.hash}>${element}</li>`;
 
             //拼接控制台li元素
