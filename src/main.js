@@ -12,14 +12,14 @@ import * as selfMode from './private-type'
  *                  closeBtnTextShow: 默认true,
  *                  liElementString: '', 默认为空, 配置的控制台html字符串(#hash#字符串必须含有)        
  *                                  <div class="child__node">
-                                        <span class="child__node__text">
-                                            这是第#index#个区域
-                                        </span>
-                                        <input data-hash='#hash#' type="text" data-url placeholder="输入绑定的url">
-                                        <button data-hash='#hash#' data-type='sure'>确认</button>
-                                        <button data-hash='#hash#' data-type='edit'>编辑</button>
-                                        <button data-hash='#hash#' data-type='del'>删除</button>
-                                    </div>
+    <span class="child__node__text">
+        这是第#index#个区域
+    </span>
+    <input data-hash='#hash#' type="text" data-url placeholder="输入绑定的url">
+    <button data-hash='#hash#' data-type='sure'>确认</button>
+    <button data-hash='#hash#' data-type='edit'>编辑</button>
+    <button data-hash='#hash#' data-type='del'>删除</button>
+</div>
                     
  *              }
  * @class HotSpot
@@ -573,15 +573,16 @@ class HotSpot {
         let mouse = {}
 
         if (ev.pageX) { //Moz
-            mouse.x = ev.pageX + window.pageXOffset;
-            mouse.y = ev.pageY + window.pageYOffset;
+            mouse.x = ev.pageX;
+            mouse.y = ev.pageY;
         } else if (ev.clientX) { //IE
-            mouse.x = ev.clientX + document.body.scrollLeft;
-            mouse.y = ev.clientY + document.body.scrollTop;
+            mouse.x = ev.clientX;
+            mouse.y = ev.clientY;
         }
 
         mouse.x -= self.parentPos.xPosition;
         mouse.y -= self.parentPos.yPosition;
+        
 
         if(self.STATUS == 'start') {
             self.startPos = mouse;
@@ -782,5 +783,5 @@ class HotSpot {
 }
 
 window.HotSpot = new HotSpot(document.querySelector('#canvas'), {
-    imageSrc: './src/image/sweden-bottom-bg.png'
+    imageSrc: './src/image/dem-academy-small.png'
 });
