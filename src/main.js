@@ -720,9 +720,11 @@ class HotSpot {
      * 根据数据来绘画对象内容
      * 
      * @param {any} data 
+     * @param {success} 成功回调方法
+     * @param {fail} 失败回调方法
      * @memberof HotSpot
      */
-    drawElement(data) {
+    drawElement({success = '', fail = ''} = {}) {
         let self = this;
         let htmlString = localStorage.getItem('dataString');
         //let dataList = JSON.parse(localStorage.getItem('data'));
@@ -731,45 +733,51 @@ class HotSpot {
 
         let dataList = self[selfMode._undecodeHtmlString](htmlString);
         //self.dataNodeList = dataList;
-        console.log(dataList);
+        if(dataList.length == 0) {
+            return fail?fail('不存在数据'):false;
+        }
 
-        dataList.forEach((item, index) => {
-            self.childNodeList.push(item);
-            console.log(item);
+        try {
+            dataList.forEach((item, index) => {
+                self.childNodeList.push(item);
+                console.log(item);
+                
+                let element = self[selfMode._getLiElementString](index + 1, item.hash, item.data.url);
+                let li = `<li data-hash=${item.hash}>${element}</li>`;
+    
+                //拼接控制台li元素
+                eleTotal += li;
+    
+                //矩形区域
+                let data = item.data;
+                let rect = `
+                    <div style="position:absolute;
+                        left: ${data.left}px;
+                        top: ${data.top}px;
+                        width: ${data.width}px;
+                        height: ${data.height}px;
+                        border: 1px solid #ccc;">
+                        <span 
+                            class="${self.option.closeBtnClassName?self.option.closeBtnClassName:'hotspot-close'}" 
+                            data-hash="${item.hash}"
+                            style="position: absolute;
+                                right: 0;
+                                top: 0;
+                            ">
+                            ${self.option.closeBtnTextShow?self.option.closeBtnText:''}
+                        </span>
+                    </div>
+                `
+                rectTotal += rect;
+            })
             
-            let element = self[selfMode._getLiElementString](index + 1, item.hash, item.data.url);
-            let li = `<li data-hash=${item.hash}>${element}</li>`;
-
-            //拼接控制台li元素
-            eleTotal += li;
-
-            //矩形区域
-            let data = item.data;
-            let rect = `
-                <div style="position:absolute;
-                    left: ${data.left}px;
-                    top: ${data.top}px;
-                    width: ${data.width}px;
-                    height: ${data.height}px;
-                    border: 1px solid #ccc;">
-                    <span 
-                        class="${self.option.closeBtnClassName?self.option.closeBtnClassName:'hotspot-close'}" 
-                        data-hash="${item.hash}"
-                        style="position: absolute;
-                            right: 0;
-                            top: 0;
-                        ">
-                        ${self.option.closeBtnTextShow?self.option.closeBtnText:''}
-                    </span>
-                </div>
-            `
-            rectTotal += rect;
-        })
+            self.parent.insertAdjacentHTML('beforeend', rectTotal);
+            self.container.insertAdjacentHTML('beforeend', eleTotal);
+        }catch (err) {
+            return fail?fail(err):false;
+        }
         
-        //self.parent.innerHTML += rectTotal;
-        //self.container.innerHTML += eleTotal;
-        self.parent.insertAdjacentHTML('beforeend', rectTotal);
-        self.container.insertAdjacentHTML('beforeend', eleTotal);
+        return success?success():false;
     }
 }
 
